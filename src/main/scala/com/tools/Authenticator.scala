@@ -9,7 +9,7 @@ import com.tools.Validator._
 
 object Authenticator {
   // Log In Staff Member
-  def staff_login(): Unit = {
+  def staff_login(): Any = {
     println(s"\n${AnsiColor.BOLD}${AnsiColor.GREEN}Staff Login${AnsiColor.RESET}")
     println("Please Sign In With Email Address And Password\n")
 
@@ -24,7 +24,24 @@ object Authenticator {
     //val encPass2 = Password.check("TestPas1s", encPass)
 
     if(check_for_null(Array[String](candidateEmail, candidatePass))) {
-      val loginUser = new Staff(candidatePass, candidateEmail)
+      val loginUser = new Staff(candidateEmail, candidatePass)
+
+      loginUser.lookup_staff()
+
+      if(loginUser.staffFirstName == "") {
+        return null
+      }
+      else if(!Password.check(candidatePass, loginUser.staffPassword).withBCrypt()) {
+        println("Password Check Unsuccessful")
+        return null
+      }
+      else {
+        return loginUser
+      }
+    }
+    else {
+      println(errorMsg)
+      return null
     }
   }
 
@@ -56,9 +73,9 @@ object Authenticator {
       staffCandidate.staffFirstName = regList(0)
       staffCandidate.staffLastName = regList(1)
       staffCandidate.staffEmailAddress = regList(2)
-      staffCandidate.staffPassword = Password.hash(regList(3)).withBCrypt().toString
+      staffCandidate.staffPassword = Password.hash(regList(3)).withBCrypt().getResult
 
-      println(staffCandidate.staffPassword)
+      staffCandidate.add_staff()
     }
     else {
       println(errorMsg)

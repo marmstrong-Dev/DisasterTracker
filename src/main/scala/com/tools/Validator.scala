@@ -1,5 +1,7 @@
 package com.tools
 
+import com.data.Staff
+
 object Validator {
   var errorMsg = ""
 
@@ -26,6 +28,14 @@ object Validator {
 
     if(email.contains("@")) {
       isValid = true
+
+      val lookupEmail = new Staff(email, "")
+      lookupEmail.lookup_staff()
+
+      if(lookupEmail.staffFirstName != "") {
+        isValid = false
+        errorMsg = "Email Already Taken"
+      }
     }
     else {
       errorMsg = "Invalid Email Address"
