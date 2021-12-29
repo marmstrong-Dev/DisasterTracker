@@ -1,10 +1,12 @@
 package com.tools
 
 import com.menus.ActiveEvents.print_event_menu
-import com.menus.CategoryMenu.{category_opts, see_cat_details}
+import com.menus.CategoryMenu.category_opts
 import com.menus.CommentMenu.comment_menu_opts
+import com.menus.EditProfile.profile_opts
 
 object Router {
+  // Case Switch to Determine Menu Route
   def main_router(routOpt: Int): Unit = {
     val opt = routOpt match {
       case 1 => view_active_events()
@@ -27,6 +29,6 @@ object Router {
   }
 
   def edit_profile(): Unit = {
-
+    profile_opts()
   }
 }

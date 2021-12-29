@@ -8,6 +8,8 @@ import com.data.Staff
 import com.tools.Validator._
 
 object Authenticator {
+  var loggedInStaff = new Staff()
+
   // Log In Staff Member
   def staff_login(): Any = {
     println(s"\n${AnsiColor.BOLD}${AnsiColor.GREEN}Staff Login${AnsiColor.RESET}")
@@ -36,6 +38,7 @@ object Authenticator {
         return null
       }
       else {
+        loggedInStaff = loginUser
         return loginUser
       }
     }

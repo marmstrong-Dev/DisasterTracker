@@ -1,6 +1,7 @@
-import com.data.DbCon.{close_spark, open_spark, con}
+import com.data.DbCon.{close_spark, open_spark, spark_update_one, con}
 import com.tools.Authenticator.{staff_login, staff_register}
 import com.tools.Router.main_router
+import com.data.Staff
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
 import scala.io.{AnsiColor, StdIn}
@@ -44,7 +45,7 @@ object Program {
     }
     else if(authSelection == "3") {
       isLoggedIn = false
-      print("\nLogged Out: Goodbye!")
+      print("\nExiting: Goodbye!")
       sys.exit()
     }
     else {
@@ -98,6 +99,7 @@ object Program {
     spark.close()*/
     con = open_spark()
 
+    //spark_update_one("marms@address.com")
     while(!isLoggedIn) {
       welcome_banner()
     }

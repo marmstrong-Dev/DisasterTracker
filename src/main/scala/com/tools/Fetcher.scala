@@ -57,4 +57,35 @@ object Fetcher {
     colDf.show(false)
     //arrayJson. (x => println(x))
   }
+
+  // Return All Categories
+  def fetch_cats(catSource: String): Unit = {
+    val url = catSource
+    val result = scala.io.Source.fromURL(url).mkString
+
+    con.sql("USE ProjectOne")
+
+    val jsonPure: Value = ujson.read(result)
+    val arrayJson: Arr = jsonPure("categories").arr
+
+    val colData = new ArrayBuffer[Row]()
+
+    for(i <- 0 until arrayJson.arr.length) {
+      colData += Row(arrayJson.value(i)("id").toString(), arrayJson.value(i)("title").toString(), arrayJson.value(i)("description").toString())
+    }
+
+    val colStructure = colData.toSeq
+
+    val colSchema = new StructType()
+      .add("cat_id", StringType)
+      .add("cat_title", StringType)
+      .add("cat_description", StringType)
+
+    val colDf: DataFrame = con.createDataFrame(
+      con.sparkContext.parallelize(colStructure),
+      colSchema
+    )
+
+    colDf.show(false)
+  }
 }

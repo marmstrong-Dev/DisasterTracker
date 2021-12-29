@@ -6,7 +6,7 @@ import com.tools.Fetcher._
 object ActiveEvents {
   // Sub Router For Events
   def print_event_menu(): Unit = {
-    println("\nWhat Would You Like To See: \n1.) View All Events\n2.) View By Category")
+    println("\nWhat Would You Like To See: \n 1.) View All Events\n 2.) View By Category")
     val selector = StdIn.readLine()
 
     if(selector == "1") {
@@ -27,6 +27,9 @@ object ActiveEvents {
 
   def print_by_cat(): Unit = {
     println("Select A Category:")
+    val catSelector = StdIn.readLine()
+
+    val url = s"https://eonet.gsfc.nasa.gov/api/v2.1/events?status=open?category=${catSelector}"
   }
   /*
     implicit val system = ActorSystem()

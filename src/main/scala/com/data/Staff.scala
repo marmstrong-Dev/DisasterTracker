@@ -17,6 +17,7 @@ class Staff (
     this("", "", staffEmail, staffPass, false)
   }
 
+  // Find Staff Member By Email Address
   def lookup_staff(): Unit = {
     val lookupQuery = s"SELECT * FROM Staff WHERE staff_email_address = '${this.staffEmailAddress}'"
 
@@ -38,6 +39,7 @@ class Staff (
     }
   }
 
+  // Add New Staff Member Default Admin Is False
   def add_staff(): Unit = {
     val addStaffQuery =
       s"""
@@ -62,7 +64,17 @@ class Staff (
     DbCon.spark_update_one(editStaffQuery)
   }
 
-  def make_admin(): Unit = {
-    val makeAdminQuery = s"UPDATE Staff SET is_supervisor = 1 WHERE staff_email_address = ${this.staffEmailAddress}"
+  def find_all_staff(): Unit = {
+    val findAllQuery = "SELECT staff_first_name, staff_last_name, staff_email_address FROM Staff"
+
+    DbCon.spark_lookup_many(findAllQuery)
+  }
+
+  def del_staff(delEmail: String): Unit = {
+    DbCon.spark_delete_one(delEmail)
+  }
+
+  def make_admin(newAdmin: String): Unit = {
+    DbCon.spark_update_one(newAdmin)
   }
 }
