@@ -12,7 +12,7 @@ object DbCon {
 
   // Initialize Staff Table
   val createStaffTable = """
-  CREATE TABLE IF NOT EXISTS Staff2 (
+  CREATE TABLE IF NOT EXISTS Staff (
     staff_first_name VARCHAR(125),
     staff_last_name VARCHAR(125),
     staff_email_address STRING,

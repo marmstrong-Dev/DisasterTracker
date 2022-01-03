@@ -62,7 +62,7 @@ object ActiveEvents {
 
     val commentList = spark_lookup_many(s"SELECT * FROM Comments WHERE comment_event = '${remQuote}'")
     for(i <- 0 until commentList.length) {
-      println("Creator: " + commentList(i)(2))
+      println("Creator: " + commentList(i)(3))
       println("Created On: " + commentList(i)(1))
       println(commentList(i)(0) + "\n")
     }
