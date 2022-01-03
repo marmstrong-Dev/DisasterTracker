@@ -55,7 +55,7 @@ object Program {
 
   // Pull Up Main Menu - Requires Login
   def main_menu(): Unit ={
-    println(s"${AnsiColor.GREEN}${AnsiColor.BOLD}Welcome${AnsiColor.RESET}\nWhat Would You Like To Do?")
+    println(s"\n${AnsiColor.GREEN}${AnsiColor.BOLD}Welcome${AnsiColor.RESET}\nWhat Would You Like To Do?")
 
     println(
       """
@@ -81,9 +81,12 @@ object Program {
 
   def main(args: Array[String]): Unit = {
     //spark_opener()
-    //welcome_banner()
 
-    /*val spark = SparkSession
+    /*
+    Logger.getLogger("org").setLevel(Level.OFF)
+    Logger.getLogger("akka").setLevel(Level.OFF)
+
+    val spark = SparkSession
       .builder()
       .appName("Disaster Tracker")
       .config("spark.master", "local")
@@ -91,15 +94,18 @@ object Program {
       .getOrCreate()
 
     spark.sparkContext.setLogLevel("ERROR")
-    println("Adding Entry")
 
     spark.sql("USE ProjectOne")
-    spark.sql(s"INSERT INTO Staff PARTITION (is_supervisor = 1) VALUES ('Sys','Admin', 'sys.admin@address.com', '${Password.hash("TestPass").withBCrypt().getResult}')")
-    spark.sql("SELECT * FROM Staff").show()
-    spark.close()*/
+    println("\nComments Table")
+    spark.sql("SELECT * FROM Comments").show(false)
+    println("\nStaff Table")
+    spark.sql("SELECT * FROM Staff").show(false)
+
+    spark.close()
+    */
+
     con = open_spark()
 
-    //spark_update_one("marms@address.com")
     while(!isLoggedIn) {
       welcome_banner()
     }
@@ -108,6 +114,5 @@ object Program {
     }
 
     close_spark()
-    //main_menu()
   }
 }

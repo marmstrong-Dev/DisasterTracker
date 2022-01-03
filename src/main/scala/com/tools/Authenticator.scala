@@ -22,9 +22,6 @@ object Authenticator {
 
     Logger.getLogger("com").setLevel(Level.OFF);
 
-    //val encPass = Password.hash(candidatePass).withBCrypt()
-    //val encPass2 = Password.check("TestPas1s", encPass)
-
     if(check_for_null(Array[String](candidateEmail, candidatePass))) {
       val loginUser = new Staff(candidateEmail, candidatePass)
 

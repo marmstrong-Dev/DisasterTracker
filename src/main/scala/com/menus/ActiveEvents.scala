@@ -1,12 +1,15 @@
 package com.menus
 
-import scala.io._
+import scala.io.{AnsiColor, StdIn}
+import com.data.DbCon.spark_lookup_many
+import com.menus.CategoryMenu.print_all_cats
 import com.tools.Fetcher._
 
 object ActiveEvents {
   // Sub Router For Events
   def print_event_menu(): Unit = {
-    println("\nWhat Would You Like To See: \n 1.) View All Events\n 2.) View By Category")
+    println(s"\n${AnsiColor.GREEN}${AnsiColor.BOLD}Event Menu${AnsiColor.RESET}")
+    println("What Would You Like To See: \n 1.) View All Events\n 2.) View By Category\n 3.) Lookup Event")
     val selector = StdIn.readLine()
 
     if(selector == "1") {
@@ -15,47 +18,53 @@ object ActiveEvents {
     else if(selector == "2") {
       print_by_cat()
     }
+    else if(selector == "3") {
+      print_event()
+    }
     else {
       println("Invalid Selection")
     }
   }
 
+  // Print All Open Events
   def print_all(): Unit = {
+    println(s"\n${AnsiColor.GREEN}${AnsiColor.BOLD}All Events List${AnsiColor.RESET}")
     val url = "https://eonet.gsfc.nasa.gov/api/v2.1/events?status=open"
     fetch_data(url)
   }
 
+  // Print Events By Category
   def print_by_cat(): Unit = {
-    println("Select A Category:")
+    print_all_cats()
+    println("Select A Category (ID):")
     val catSelector = StdIn.readLine()
 
-    val url = s"https://eonet.gsfc.nasa.gov/api/v2.1/events?status=open?category=${catSelector}"
+    try {
+      val url = s"https://eonet.gsfc.nasa.gov/api/v2.1/categories/${catSelector.toInt}?status=open"
+      fetch_data(url)
+    }
+    catch {
+      case e: Exception => println("Invalid Selection")
+    }
   }
-  /*
-    implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer
-    implicit val execute = system.dispatcher
 
-    import system.dispatcher
+  // Lookup Individual Event
+  def print_event(): Unit = {
+    val eventList = fetch_data("https://eonet.gsfc.nasa.gov/api/v2.1/events?status=open").collect()
+    println("Select An Event:")
+    val eventSelector = StdIn.readLine()
 
-    val req = HttpRequest(
-      method = HttpMethods.GET,
-      uri = "https://eonet.gsfc.nasa.gov/api/v2.1/events?status=open",
-      entity = HttpEntity(
-        ContentTypes.`application/json`,
-        s""
-      )
-    )
+    var url = "https://eonet.gsfc.nasa.gov/api/v2.1/events?status=open"
+    fetch_single_event(url, eventSelector.toInt - 1)
 
-    val resFuture = Http().singleRequest(req)
-    val entityFuture = resFuture.flatMap(res => res.entity.toStrict(2.seconds))
-    entityFuture.map(entity => entity.data.utf8String).foreach(x => println(x))
-    //implicit val executionContext = system.executionContext
-    //val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = "http://akka.io"))
+    var remQuote = eventList(eventSelector.toInt - 1)(1).toString
+    remQuote = remQuote.substring(1, remQuote.length - 1)
 
-    val url = "https://eonet.gsfc.nasa.gov/api/v2.1/events?status=open"
-    val result = scala.io.Source.fromURL(url).mkString
-
-    println(result)
-   */
+    val commentList = spark_lookup_many(s"SELECT * FROM Comments WHERE comment_event = '${remQuote}'")
+    for(i <- 0 until commentList.length) {
+      println("Creator: " + commentList(i)(2))
+      println("Created On: " + commentList(i)(1))
+      println(commentList(i)(0) + "\n")
+    }
+  }
 }

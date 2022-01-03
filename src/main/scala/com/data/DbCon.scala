@@ -1,14 +1,16 @@
 package com.data
 
-import org.apache.spark.sql.{SaveMode, SparkSession, functions}
+import org.apache.spark.sql.{SaveMode, SparkSession, functions, Row}
 import com.password4j._
 import scala.collection.mutable.ArrayBuffer
 import org.apache.log4j.Logger
 import org.apache.log4j.Level
+import org.apache.spark.sql.DataFrame
 
 object DbCon {
   var con: SparkSession = null
 
+  // Initialize Staff Table
   val createStaffTable = """
   CREATE TABLE IF NOT EXISTS Staff2 (
     staff_first_name VARCHAR(125),
@@ -20,6 +22,7 @@ object DbCon {
   PARTITIONED BY (is_supervisor INT)
   """
 
+  // Initialize Comments Table
   val createCommentsTable = """
   CREATE TABLE IF NOT EXISTS Comments (
     comment_txt STRING,
@@ -28,6 +31,7 @@ object DbCon {
     comment_creator STRING
   )
   COMMENT 'Event Comments Table'
+  CLUSTERED BY (comment_event) SORTED BY (comment_creator) INTO 32 BUCKETS
   """
 
   // Open Spark Session
@@ -62,7 +66,7 @@ object DbCon {
     spark.sql("USE ProjectOne")
     spark.sql(createStaffTable)
     spark.sql(createCommentsTable)
-
+    con.sql(s"INSERT INTO Staff PARTITION (is_supervisor = 1) VALUES ('Global','Admin', 'g.admin@address.com', '${Password.hash("PassAdmin").withBCrypt().getResult}')")
     spark.close()
   }
 
@@ -72,7 +76,7 @@ object DbCon {
     println("Adding Entity")
 
     con.sql("USE ProjectOne")
-    con.sql(query).show()
+    con.sql(query)
   }
 
   // Lookup Individual Entity
@@ -91,58 +95,78 @@ object DbCon {
   }
 
   // Fetch All Data For Table
-  def spark_lookup_many(allQuery: String): Unit = {
-    println("Looking Up All Entities")
+  def spark_lookup_many(allQuery: String): Array[Row] = {
+    println("\nLooking Up Entities")
 
     con.sql("USE ProjectOne")
-    con.sql(allQuery).show(false)
+
+    val returnArray = con.sql(allQuery)
+    val resArray = returnArray.collect()
+
+    return resArray
   }
 
   // Delete Individual Record
-  def spark_delete_one(deleteEmail: String): Unit = {
+  def spark_delete_one(deleteQuery: String, isStaff: Boolean): Unit = {
     println("Deleting Entity")
 
     con.sql("USE ProjectOne")
-    var newDf = con.sql(s"SELECT * FROM Staff WHERE staff_email_address != '${deleteEmail}'")
+    val newDf = con.sql(deleteQuery)
 
-    newDf = newDf.withColumn("is_supervisor", functions.when(
-      functions.col("staff_email_address").equalTo(deleteEmail), 1)
-      .otherwise(functions.col("is_supervisor")))
+    if(isStaff) {
+      del_one_staff(newDf)
+    }
+    else {
+      del_one_comment(newDf)
+    }
+  }
 
+  // Delete One Staff Member
+  def del_one_staff(newDf: DataFrame): Unit = {
     newDf.write.partitionBy("is_supervisor").mode("Overwrite").saveAsTable("Staff2")
 
     con.sql("DROP TABLE IF EXISTS Staff")
     con.sql("ALTER TABLE Staff2 RENAME TO Staff")
-    con.sql("SELECT * FROM Staff").show()
   }
 
-  // Update Single Entity
-  def spark_update_one(updateEmail: String): Unit = {
+  // Delete One Comment
+  def del_one_comment(newDf: DataFrame): Unit = {
+    newDf.write.bucketBy(32, "comment_creator").mode("Overwrite").saveAsTable("Comments2")
+
+    con.sql("DROP TABLE IF EXISTS Comments")
+    con.sql("ALTER TABLE Comments2 RENAME TO Comments")
+  }
+
+  // Update Individual Entity
+  def spark_update_one(changeCandidate: Staff, adminChange: Boolean): Unit = {
     println("Modifying Entity")
 
     con.sql("USE ProjectOne")
     var newDf = con.sql("SELECT * FROM Staff")
 
-    newDf = newDf.withColumn("is_supervisor", functions.when(
-      functions.col("staff_email_address").equalTo(updateEmail), 1)
-      .otherwise(functions.col("is_supervisor")))
+    if(adminChange) {
+      newDf = newDf.withColumn("is_supervisor", functions.when(
+        functions.col("staff_email_address").equalTo(changeCandidate.staffEmailAddress), 1)
+        .otherwise(functions.col("is_supervisor")))
+    }
+    else {
+      newDf = newDf.withColumn("staff_first_name", functions.when(
+        functions.col("staff_email_address").equalTo(changeCandidate.staffEmailAddress), value = changeCandidate.staffFirstName)
+        .otherwise(functions.col("staff_first_name")))
 
-    //newDf.createOrReplaceGlobalTempView("TempData")
-    //newDf.createOrReplaceTempView("TempData")
-    //con.sql(s"INSERT INTO Staff PARTITION (is_supervisor = 1) VALUES ('Global','Admin', 'g.admin@address.com', '${Password.hash("PassAdmin").withBCrypt().getResult}')")
-    //con.sql("DROP TABLE IF EXISTS StaffNew")
-    //con.sql(createStaffTable)
-    //con.sql("UPDATE Staff SET is_supervisor = 1 WHERE staff_email_address = 'marms@address.com'")
-    //con.sql("SHOW PARTITIONS Staff").show()
-    //con.sql("TRUNCATE TABLE Staff PARTITION(is_supervisor = 1)")
-    //con.sql("ALTER TABLE Staff PARTITION(is_supervisor INT)")
-    //con.sql("INSERT INTO Staff2 PARTITION(is_supervisor = 1) SELECT * FROM StaffNew")
+      newDf = newDf.withColumn("staff_last_name", functions.when(
+        functions.col("staff_email_address").equalTo(changeCandidate.staffEmailAddress), value = changeCandidate.staffLastName)
+        .otherwise(functions.col("staff_last_name")))
+
+      newDf = newDf.withColumn("staff_password", functions.when(
+        functions.col("staff_email_address").equalTo(changeCandidate.staffEmailAddress), value = changeCandidate.staffPassword)
+        .otherwise(functions.col("staff_password")))
+    }
 
     newDf.write.partitionBy("is_supervisor").mode("Overwrite").saveAsTable("Staff2")
 
     con.sql("DROP TABLE IF EXISTS Staff")
     con.sql("ALTER TABLE Staff2 RENAME TO Staff")
-    con.sql("SELECT * FROM Staff").show()
   }
 
   // Close Spark Session

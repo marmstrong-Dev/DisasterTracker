@@ -6,11 +6,10 @@ import org.apache.log4j.Logger
 import org.apache.log4j.Level
 import org.apache.spark.sql.types.{StringType, StructType}
 import ujson.{Arr, Value}
-
 import scala.collection.mutable.ArrayBuffer
 
 object Fetcher {
-  def fetch_data(dataSource: String): Unit = {
+  def fetch_data(dataSource: String): DataFrame = {
     val url = dataSource
     val result = scala.io.Source.fromURL(url).mkString
 
@@ -38,13 +37,18 @@ object Fetcher {
     val colData = new ArrayBuffer[Row]()
 
     for(i <- 0 until arrayJson.arr.length) {
-      colData += Row(arrayJson.value(i)("id").toString(), arrayJson.value(i)("title").toString(), arrayJson.value(i)("link").toString())
+      colData += Row(
+        (i + 1).toString,
+        arrayJson.value(i)("id").toString(),
+        arrayJson.value(i)("title").toString(),
+        arrayJson.value(i)("link").toString())
     }
 
     //val completedData = colData.toArray
     val colStructure = colData.toSeq
 
     val colSchema = new StructType()
+      .add("event_num", StringType)
       .add("event_id", StringType)
       .add("event_title", StringType)
       .add("source_link", StringType)
@@ -55,6 +59,7 @@ object Fetcher {
     )
 
     colDf.show(false)
+    return colDf
     //arrayJson. (x => println(x))
   }
 
@@ -71,7 +76,7 @@ object Fetcher {
     val colData = new ArrayBuffer[Row]()
 
     for(i <- 0 until arrayJson.arr.length) {
-      colData += Row(arrayJson.value(i)("id").toString(), arrayJson.value(i)("title").toString(), arrayJson.value(i)("description").toString())
+      colData += Row(arrayJson.value(i)("id").toString(), arrayJson.value(i)("title").toString(), arrayJson.value(i)("link").toString())
     }
 
     val colStructure = colData.toSeq
@@ -79,7 +84,7 @@ object Fetcher {
     val colSchema = new StructType()
       .add("cat_id", StringType)
       .add("cat_title", StringType)
-      .add("cat_description", StringType)
+      .add("cat_link", StringType)
 
     val colDf: DataFrame = con.createDataFrame(
       con.sparkContext.parallelize(colStructure),
@@ -87,5 +92,42 @@ object Fetcher {
     )
 
     colDf.show(false)
+  }
+
+  // Return Single Category
+  def fetch_single_cat(catSource: String, catId: Int): Unit = {
+    val url = catSource
+    val result = scala.io.Source.fromURL(url).mkString
+
+    con.sql("USE ProjectOne")
+
+    val jsonPure: Value = ujson.read(result)
+    val colData = Row(catId, jsonPure("title"), jsonPure("description"), jsonPure("link"))
+    val colStructure = colData.toSeq
+
+    println("\nID: " + colData(0))
+    println("Title: " + colData(1))
+    println("Link: " + colData(3))
+    println("Description: \n" + colData(2) + "\n")
+  }
+
+  def fetch_single_event(eventSource: String, eventId: Int): Unit = {
+    val url = eventSource
+    val result = scala.io.Source.fromURL(url).mkString
+
+    con.sql("USE ProjectOne")
+
+    val jsonPure: Value = ujson.read(result)
+    val colData = Row(
+      jsonPure("events")(eventId)("id"),
+      jsonPure("events")(eventId)("title"),
+      jsonPure("events")(eventId)("link"),
+      jsonPure("events")(eventId)("categories")(0)("title"))
+    val colStructure = colData.toSeq
+
+    println("ID: " + colData(0))
+    println("Title: " + colData(1))
+    println("Link: " + colData(2))
+    println("Category: " + colData(3) + "\n")
   }
 }
