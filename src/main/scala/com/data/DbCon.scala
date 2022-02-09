@@ -66,7 +66,7 @@ object DbCon {
     spark.sql("USE ProjectOne")
     spark.sql(createStaffTable)
     spark.sql(createCommentsTable)
-    con.sql(s"INSERT INTO Staff PARTITION (is_supervisor = 1) VALUES ('Global','Admin', 'g.admin@address.com', '${Password.hash("PassAdmin").withBCrypt().getResult}')")
+    spark.sql(s"INSERT INTO Staff PARTITION (is_supervisor = 1) VALUES ('Global','Admin', 'g.admin@address.com', '${Password.hash("PassAdmin").withBCrypt().getResult}')")
     spark.close()
   }
 
